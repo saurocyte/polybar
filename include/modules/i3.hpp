@@ -89,6 +89,7 @@ namespace modules {
     bool m_pinworkspaces{false};
     bool m_strip_wsnumbers{false};
     bool m_fuzzy_match{false};
+    uint m_workspacecount{0};
 
     unique_ptr<i3_util::connection_t> m_ipc;
   };

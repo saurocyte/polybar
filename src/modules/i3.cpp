@@ -5,6 +5,7 @@
 #include "modules/i3.hpp"
 #include "utils/factory.hpp"
 #include "utils/file.hpp"
+#include <algorithm>
 
 #include "modules/meta/base.inl"
 
@@ -31,6 +32,7 @@ namespace modules {
     m_pinworkspaces = m_conf.get(name(), "pin-workspaces", m_pinworkspaces);
     m_strip_wsnumbers = m_conf.get(name(), "strip-wsnumbers", m_strip_wsnumbers);
     m_fuzzy_match = m_conf.get(name(), "fuzzy-match", m_fuzzy_match);
+    m_workspacecount = m_conf.get(name(), "workspace-count", m_workspacecount);
 
     m_conf.warn_deprecated(name(), "wsname-maxlen", "%name:min:max%");
 
@@ -170,6 +172,21 @@ namespace modules {
         label->replace_token("%index%", to_string(ws->num));
         m_workspaces.emplace_back(factory_util::unique<workspace>(ws->name, ws_state, move(label)));
       }
+
+      // Add dummy workspaces
+      vector<int> nums;
+      for (auto &ws : m_workspaces) nums.push_back(stoi(ws->name));
+      auto label = m_statelabels.find(state::UNFOCUSED)->second->clone();
+      for (uint i = 1; i < m_workspacecount + 1; ++i) {
+        if (find(nums.begin(), nums.end(), i) == nums.end()) {
+          auto label = m_statelabels.find(state::UNFOCUSED)->second->clone();
+          m_workspaces.emplace_back(factory_util::unique<workspace>(to_string(i), state::UNFOCUSED, move(label)));
+        }
+      }
+      sort(m_workspaces.begin(), m_workspaces.end(), 
+        [](const unique_ptr<workspace> &a, const unique_ptr<workspace> &b) -> bool {
+          return stoi(a->name) < stoi(b->name);
+        });
 
       return true;
     } catch (const exception& err) {
